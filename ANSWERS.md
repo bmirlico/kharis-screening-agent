@@ -68,13 +68,13 @@ For a single-agent, linear tool-use loop like this screening agent, the Anthropi
 
 ## 5. A System I Have Shipped
 
-**CallClaw** — an AI agent built during a hackathon that joins Google Meet calls, listens in real-time, and executes actions on behalf of participants.
+**[Elderly Companion](https://github.com/bmirlico/elderly-companion)** — an AI phone companion for seniors that won #1 at the 2026 {Tech: Europe} Paris AI Hackathon. The system makes daily phone calls to elderly residents, holds warm conversations, analyzes their well-being, and alerts families when something seems off.
 
-**Problem:** Teams spend hours in meetings where action items are discussed but never captured. Switching to a note-taking tool mid-meeting breaks flow, and post-meeting summaries lose context.
+**Problem:** Isolated seniors — especially those in care homes or living alone — often go days without meaningful human interaction. Families worry but can't call every day. Existing check-in solutions are either robotic IVR systems or require the senior to use an app, which most won't.
 
-**What I built:** An agent using Recall.ai for meeting ingestion (audio stream + transcription), Mistral for real-time intent detection, ElevenLabs for voice responses, and a FastAPI + React/TypeScript stack for the control interface. The agent maintained cross-call memory via Redis — it could reference decisions from previous meetings. OpenClaw handled action execution (creating tasks, sending follow-ups).
+**What I built:** A real-time voice agent using FastAPI + WebSockets as the backbone, Twilio for outbound calls and bidirectional audio streaming, Gradium for speech-to-text (with VAD for natural turn detection) and text-to-speech, and OpenAI GPT-4o-mini for conversational responses. After each call, a Dust AI agent analyzes the transcript and produces a structured assessment (mood score, alert level: green/yellow/red, family message). If the alert level is yellow or red, Twilio sends an SMS to the family immediately. The family dashboard (React + TypeScript) shows daily pulse cards, a week-long mood strip, and AI-generated nudges. Supabase (PostgreSQL) stores residents, calls, transcripts, and analyses.
 
 **What broke:**
-- **Audio latency was unpredictable.** The Recall.ai stream sometimes lagged 3-5 seconds, causing the agent to respond to questions that had already been answered by another participant. We added a debounce window but it made the agent feel sluggish.
-- **Cross-call memory had key collisions.** When multiple calls ran simultaneously, Redis keys for session state collided because our key schema used only the meeting ID without a partition prefix. Fix was straightforward (compound keys) but cost us demo time.
-- **Intent detection false positives.** Mistral would sometimes interpret rhetorical questions as action requests. We added a confirmation step ("Did you want me to create a task for that?") which helped but added friction.
+- **Audio format conversion was latency-sensitive.** Twilio streams mulaw at 8kHz, but Gradium expects PCM at 24kHz. The real-time resampling had to stay under 200ms round-trip or the conversation felt laggy. We solved it with streaming chunk processing rather than buffering full utterances.
+- **STT false positives from background noise.** Care home environments are noisy — TV, other residents, staff. Gradium's VAD would trigger on ambient sound. We tuned the inactivity probability threshold to >80% and added a 4-second fallback timeout, plus echo suppression that mutes STT while the AI is speaking.
+- **Post-call analysis reliability.** The Dust agent occasionally returned malformed JSON when transcripts were very short (e.g., the senior hung up after 10 seconds). We added validation with sensible defaults and a minimum transcript length check before triggering analysis.
