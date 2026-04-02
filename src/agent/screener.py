@@ -1,5 +1,7 @@
+import asyncio
 import json
 import logging
+import re
 
 import anthropic
 
@@ -47,19 +49,19 @@ async def run_screening(company_name: str) -> ScreeningNote:
             # Append Claude's response (includes both text and tool_use blocks)
             messages.append({"role": "assistant", "content": response.content})
 
-            # Execute each tool call and collect results
-            tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    logger.info(f"  Tool call: {block.name}({block.input})")
-                    result = await handle_tool_call(block.name, block.input)
-                    tool_results.append(
-                        {
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": result,
-                        }
-                    )
+            # Execute tool calls in parallel for speed
+            tool_blocks = [b for b in response.content if b.type == "tool_use"]
+            for b in tool_blocks:
+                logger.info(f"  Tool call: {b.name}({b.input})")
+
+            results = await asyncio.gather(
+                *(handle_tool_call(b.name, b.input) for b in tool_blocks)
+            )
+
+            tool_results = [
+                {"type": "tool_result", "tool_use_id": b.id, "content": r}
+                for b, r in zip(tool_blocks, results)
+            ]
 
             # Feed tool results back to Claude
             messages.append({"role": "user", "content": tool_results})
@@ -72,13 +74,19 @@ async def run_screening(company_name: str) -> ScreeningNote:
                     text_content += block.text
 
             try:
-                # Strip potential markdown fencing if Claude wraps JSON in ```
                 cleaned = text_content.strip()
-                if cleaned.startswith("```"):
-                    cleaned = cleaned.split("\n", 1)[1]
-                if cleaned.endswith("```"):
-                    cleaned = cleaned.rsplit("```", 1)[0]
-                cleaned = cleaned.strip()
+
+                # Extract JSON from markdown fencing (```json ... ``` or ``` ... ```)
+                fence_match = re.search(r"```(?:json)?\s*\n?(.*?)```", cleaned, re.DOTALL)
+                if fence_match:
+                    cleaned = fence_match.group(1).strip()
+
+                # If still not valid JSON, try to find the JSON object in the text
+                if not cleaned.startswith("{"):
+                    brace_start = cleaned.find("{")
+                    brace_end = cleaned.rfind("}") + 1
+                    if brace_start != -1 and brace_end > brace_start:
+                        cleaned = cleaned[brace_start:brace_end]
 
                 note_data = json.loads(cleaned)
                 note = ScreeningNote(**note_data)
