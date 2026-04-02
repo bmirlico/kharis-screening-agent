@@ -51,6 +51,7 @@ If this were a daily tool for 5 analysts at Kharis:
 - **Evaluation suite**: Build a benchmark of 20+ known companies with expected outputs. Run this on every prompt change to catch quality regressions.
 - **Error handling and observability**: Structured logging with request IDs, Claude token usage tracking, latency percentiles, alerting on failure rates.
 - **Rate limiting**: Per-analyst rate limits to prevent accidental spam, and graceful queuing when API limits are approached.
+- **Latency optimization**: Screening currently takes ~40 seconds end-to-end (5-6 Claude API roundtrips + tool execution). Two levers to improve this: (1) optimize the prompt so Claude makes fewer, more targeted searches instead of broad exploratory ones; (2) lower `max_agent_iterations` from 10 to 6-7 to cap tail latency while still allowing enough research depth. Switching to a faster model (Haiku) would hurt note quality since the agent needs strong reasoning at every step — query formulation, result analysis, and synthesis.
 
 ## 4. LangChain / LangGraph: No
 
