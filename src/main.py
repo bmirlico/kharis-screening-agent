@@ -1,9 +1,11 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, BackgroundTasks
 from src.models.schemas import ScreeningRequest, ScreeningResponse
 from src.agent.screener import run_screening
 from src.services.slack import post_screening_note
+from src.services.bot import start_bolt, stop_bolt
 
 logging.basicConfig(
     level=logging.INFO,
@@ -11,10 +13,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app):
+    handler = await start_bolt()
+    yield
+    await stop_bolt(handler)
+
+
 app = FastAPI(
     title="Kharis Screening Agent",
     description="AI-powered company screening tool for investment analysts.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 

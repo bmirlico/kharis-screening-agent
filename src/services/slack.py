@@ -72,14 +72,17 @@ def _format_blocks(note: ScreeningNote, slack_handle: str) -> list[dict]:
     ]
 
 
-async def post_screening_note(note: ScreeningNote, slack_handle: str) -> None:
+async def post_screening_note(
+    note: ScreeningNote, slack_handle: str, *, channel: str | None = None
+) -> None:
     """Post a formatted screening note to Slack."""
     client = AsyncWebClient(token=settings.slack_bot_token)
     blocks = _format_blocks(note, slack_handle)
+    target_channel = channel or settings.slack_channel_id
 
     try:
         await client.chat_postMessage(
-            channel=settings.slack_channel_id,
+            channel=target_channel,
             text=f"Screening Note: {note.company_name}",  # fallback for notifications
             blocks=blocks,
         )
