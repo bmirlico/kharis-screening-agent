@@ -4,7 +4,7 @@
 
 The system has four layers:
 
-**API Layer** — A FastAPI endpoint (`POST /screen`) accepts a company name and Slack handle, validates the input with Pydantic, and dispatches the work to a background task. This returns immediately with a 202-style confirmation so the analyst isn't blocked.
+**Input Layer** — Two entry points: (1) A Slack bot using slack-bolt Socket Mode — analysts type `@Kharis Screener Vinted` directly in Slack, and the bot acknowledges immediately before running the screening in the background. (2) A REST API (`POST /screen`) as a programmatic fallback, accepting a company name and Slack handle via JSON. Both paths feed into the same screening pipeline.
 
 **Agent Layer** — The core of the system. A Claude-powered agent (using `claude-sonnet-4-20250514`) runs an agentic tool-use loop. The agent receives a system prompt that defines its role as a PE analyst and its research strategy, then autonomously decides which tools to call, in what order, and how many times. The loop works as follows:
 1. Send the initial message ("Research {company}") to Claude with the tool definitions.
@@ -14,7 +14,7 @@ The system has four layers:
 
 This design lets Claude act as the orchestrator — it decides the research plan based on what it finds, rather than following a rigid pipeline.
 
-**Services Layer** — Two data-gathering services (Brave Search for web search, httpx + trafilatura for webpage content extraction) and one delivery service (Slack SDK for posting the formatted note).
+**Services Layer** — Two data-gathering services (Brave Search for web search, httpx + trafilatura for webpage content extraction) and two Slack services: slack-bolt for receiving mentions via Socket Mode, and Slack SDK for posting formatted Block Kit notes back to the channel.
 
 **What breaks first at scale:**
 - `BackgroundTasks` runs in the same process as FastAPI — under heavy concurrent load, this starves the event loop. The fix is a proper task queue (Celery + Redis or similar).
@@ -44,7 +44,7 @@ The system prompt (`src/agent/prompts.py`) was designed with several deliberate 
 If this were a daily tool for 5 analysts at Kharis:
 
 - **Task queue + persistence**: Replace `BackgroundTasks` with Celery + Redis. Add a PostgreSQL-backed job table so screening requests survive server restarts, can be retried on failure, and have status tracking.
-- **Progress updates**: Post a Slack message immediately ("Researching {company}...") and edit it in-place as the agent progresses. Analysts want to know it's working.
+- **Progress updates**: The bot already posts an acknowledgment ("Screening *{company}*..."), but with more time I would edit that message in-place as the agent progresses (e.g., "Searching funding data..." → "Writing note...") using `chat_update`.
 - **Structured data sources**: Add the Crunchbase API for reliable funding/revenue data and LinkedIn API for team composition. Web search is good for breadth but weak on structured financials.
 - **Caching**: Cache search results and screening notes in Redis (keyed by company name + date). If two analysts screen the same company the same week, reuse the note.
 - **Feedback loop**: Add thumbs up/down buttons on the Slack message (Slack interactivity). Store feedback in a database and use it to iterate on the system prompt and evaluate quality over time.

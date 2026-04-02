@@ -21,7 +21,7 @@ async def handle_mention(event, say, client):
     company_name = re.sub(r"<@[\w]+>\s*", "", text).strip()
 
     if not company_name:
-        await say("Usage: `@KharisBot <company name>` — e.g. `@KharisBot Vinted`")
+        await say("Usage: `@Kharis Screener <company name>` — e.g. `@Kharis Screener Vinted`")
         return
 
     # Resolve analyst display name
