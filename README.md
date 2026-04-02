@@ -4,8 +4,7 @@ AI-powered company screening tool for investment analysts. Mention the bot in Sl
 
 ## 🎬 Demo
 
-<!-- Replace with your video link -->
-[Watch the demo video](YOUR_VIDEO_LINK_HERE)
+https://github.com/user-attachments/assets/be42a24d-6d6c-41f2-a71d-81ef692d695f
 
 ## 🏗️ Architecture
 
