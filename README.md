@@ -1,8 +1,13 @@
-# Kharis Screening Agent
+# 🔍 Kharis Screening Agent
 
 AI-powered company screening tool for investment analysts. Mention the bot in Slack with a company name — the agent researches the company using web search, generates a structured screening note via Claude, and delivers it directly in the channel.
 
-## Architecture
+## 🎬 Demo
+
+<!-- Replace with your video link -->
+[Watch the demo video](YOUR_VIDEO_LINK_HERE)
+
+## 🏗️ Architecture
 
 ```
   @Kharis Screener Vinted (Slack mention)
@@ -34,7 +39,7 @@ AI-powered company screening tool for investment analysts. Mention the bot in Sl
  └──────────────┘
 ```
 
-## Key Design Choices
+## 💡 Key Design Choices
 
 - **Slack-native interface** — analysts type `@Kharis Screener Vinted` directly in Slack. No curl, no external UI.
 - **Socket Mode** — the bot connects to Slack via WebSocket, so no public URL or reverse proxy is needed.
@@ -43,14 +48,14 @@ AI-powered company screening tool for investment analysts. Mention the bot in Sl
 - **Brave Search** — free tier (2,000 queries/month), clean API, high-quality results.
 - **Trafilatura** — best Python library for extracting clean text from web pages.
 
-## Prerequisites
+## 📋 Prerequisites
 
 - Python 3.11+
 - [Anthropic API key](https://console.anthropic.com)
 - [Brave Search API key](https://brave.com/search/api/) (free tier)
 - Slack App with Socket Mode (see setup below)
 
-## Slack App Setup
+## 🔧 Slack App Setup
 
 1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → From Scratch
 2. Under **Settings → Socket Mode**, toggle it on and generate an app-level token (`xapp-...`) → this is your `SLACK_APP_TOKEN`
@@ -61,7 +66,7 @@ AI-powered company screening tool for investment analysts. Mention the bot in Sl
 7. In Slack, right-click your target channel → **View channel details** → copy the Channel ID → this is your `SLACK_CHANNEL_ID`
 8. Invite the bot to the channel: `/invite @BotName`
 
-## Installation
+## 📦 Installation
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/kharis-screening-agent.git
@@ -79,7 +84,7 @@ cp .env.example .env
 # Edit .env with your API keys
 ```
 
-## Usage
+## 🚀 Usage
 
 ### Start the server
 
@@ -113,12 +118,12 @@ The API responds immediately with a confirmation. The note is posted to the defa
 
 FastAPI auto-generates interactive docs at [http://localhost:8000/docs](http://localhost:8000/docs).
 
-## Running Tests
+## 🧪 Running Tests
 
 ```bash
 pytest tests/ -v
 ```
 
-## Design Decisions / Written questions
+## 📝 Design Decisions / Written questions
 
 See [ANSWERS.md](./ANSWERS.md) for a detailed discussion of architecture choices, prompt engineering, and trade-offs.
